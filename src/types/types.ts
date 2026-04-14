@@ -14,7 +14,7 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email("Please provide a valid email address"),
+  email: z.email("Please provide a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -22,6 +22,22 @@ export const updateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters long").optional(),
   phone: z.string().optional(),
 });
+
+export const orderSchema = z.object({
+  restaurantId: z.uuid({message:"Invalid Restaurant selection"}),
+  addressId: z.uuid(),
+  items: z.array(
+    z.object({
+      menuItemId: z.uuid("Invalid Menu Item"),
+      quantity: z
+          .number()
+          .int("Quantity must be a whole number")
+          .positive("Quantity must be at least 1"),
+    })
+  )
+  .min(1, "Your cart cannot be empty"),
+})
+
 
 // --- TypeScript Type Exports ---
 

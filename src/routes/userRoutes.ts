@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     getMe,
     updateUser,
+    addAddress
 } from "../controllers/userController.js";
 import { protect } from "../middleware/auth.middleware.js";
 

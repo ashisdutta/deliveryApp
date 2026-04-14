@@ -3,14 +3,16 @@ import {
     placeOrder,
     orderStatus,
     orderHistory,
+    getOrderDetails,
     cancelOrder
 } from "../controllers/orderController.js";
 
-import { protect } from "../middleware/auth.middleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.post("/place-order", protect, placeOrder);
+router.post("/", protect, placeOrder);
 router.get("/status", protect, orderStatus);
 router.get("/history", protect, orderHistory);
-router.get("/cancel", protect, cancelOrder);
+router.get("/:id", protect, getOrderDetails);
+router.get("/:id/cancel", protect, cancelOrder); 
