@@ -1,5 +1,5 @@
 // Import the Role enum directly from your generated Prisma client
-import { Role } from "../generated/prisma/enums.js";
+import { Role } from "../generated/prisma/index.js";
 
 // Define the exact shape of the payload signed in authController.js
 export interface JwtPayload {

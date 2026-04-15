@@ -10,25 +10,16 @@ interface ItemInput {
     items: ItemInput[],
     addressId: string
     ) => {
-    // 1. Fetch the Menu Items and the Restaurant (with Address)
-    // const [dbItems, restaurant] = await Promise.all([
-    //     prisma.menuItem.findMany({
-    //     where: { id: { in: items.map((i) => i.menuItemId) }, restaurantId },
-    //     }),
-    //     prisma.restaurant.findUnique({
-    //     where: { id: restaurantId },
-    //     include: { address: true, deliverySlabs: true },
-    //     }),
-    // ]);
-    const dbItems = await prisma.menuItem.findMany({
+    //1. Fetch the Menu Items and the Restaurant (with Address)
+    const [dbItems, restaurant] = await Promise.all([
+        prisma.menuItem.findMany({
         where: { id: { in: items.map((i) => i.menuItemId) }, restaurantId },
-    });
-
-    const restaurant = await prisma.restaurant.findUnique({
+        }),
+        prisma.restaurant.findUnique({
         where: { id: restaurantId },
         include: { address: true, deliverySlabs: true },
-    });
-    
+        }),
+    ]);
 
     if (!restaurant || !restaurant.address) throw new Error("Restaurant not found");
     if (dbItems.length !== items.length) throw new Error("Some items are unavailable");
@@ -49,6 +40,7 @@ interface ItemInput {
 
     // 3. Calculate Distance for Delivery Fee
     const userAddress = await prisma.address.findUnique({ where: { id: addressId } });
+
     if (!userAddress) throw new Error("Address not found");
     if (!restaurant.address.latitude ||
         !restaurant.address.longitude ||
