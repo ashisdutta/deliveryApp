@@ -41,7 +41,7 @@ model Restaurant {
   categories  Category[]
   menuItems   MenuItem[]
   orders      Order[]
-  
+  deliverySlabs DeliverySlab[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -88,6 +88,7 @@ model MenuItem {
   isAvailable  Boolean     @default(true)
   imageUrl     String?
   categoryId   String
+  isDeleted Boolean @default(false)
   category     Category    @relation(fields: [categoryId], references: [id])
   restaurantId String
   restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -105,7 +106,11 @@ model Order {
   restaurantId     String
   restaurant       Restaurant  @relation(fields: [restaurantId], references: [id])
   status           OrderStatus @default(PENDING)
-  totalAmount      Float  
+  subTotal         Float       // Food price only
+  discountAmount   Float       @default(0.0)
+  taxAmount        Float       // GST amount
+  deliveryFee      Float
+  totalAmount      Float 
   items            OrderItem[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
@@ -123,6 +128,16 @@ model OrderItem {
   priceAtBuy Float    // Records the item's price at the exact moment of purchase
   @@index([orderId])
 }
+
+model DeliverySlab {
+  id           String     @id @default(uuid())
+  minDistance  Float      // in km (e.g., 0)
+  maxDistance  Float      // in km (e.g., 2)
+  price        Float      // (e.g., 20)
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+}
+
 
 enum OrderStatus {
   PENDING
