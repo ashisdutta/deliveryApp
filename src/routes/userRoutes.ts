@@ -11,6 +11,6 @@ const router = Router();
 
 router.get("/me", protect, getMe);
 router.put("/update", protect,updateUser);
-router.post("/address", protect, addAddress)
+router.post("/address", protect, addAddress);
 
 export default router;
