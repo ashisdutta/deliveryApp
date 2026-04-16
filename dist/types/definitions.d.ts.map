@@ -1,0 +1,1 @@
+{"version":3,"file":"definitions.d.ts","sourceRoot":"","sources":["../../src/types/definitions.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,IAAI,EAAE,MAAM,8BAA8B,CAAC;AAGpD,MAAM,WAAW,UAAU;IACzB,MAAM,EAAE,MAAM,CAAC;IACf,IAAI,EAAE,IAAI,CAAC;CACZ;AAGD,OAAO,CAAC,MAAM,CAAC;IACX,UAAU,OAAO,CAAC;QAClB,UAAU,OAAO;YACf,IAAI,CAAC,EAAE,UAAU,CAAC;SACnB;KACF;CACF"}

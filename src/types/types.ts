@@ -46,22 +46,26 @@ export const addressSchema = z.object({
   label: z.string().optional(), // e.g., "Home", "Office"
 });
 
+export const updateAddressSchema = addressSchema.partial();
+
 export const createRestaurantSchema = z.object({
-    name: z.string(),
-    description: z.string().optional(),
-    street: z.string(),
-    city: z.string(),
-    state: z.string(),
-    zipCode: z.string(),
-    latitude: z.number(),
-    longitude: z.number(),
-    deliverySlabs: z.array(
-        z.object({
-            minDistance: z.number(),
-            maxDistance: z.number(),
-            price: z.number(),
-        })
-    ).min(1, "At least one delivery slab is required"),
+  name: z.string(),
+  description: z.string().optional(),
+  street: z.string(),
+  city: z.string(),
+  state: z.string(),
+  zipCode: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  deliverySlabs: z
+    .array(
+      z.object({
+        minDistance: z.number(),
+        maxDistance: z.number(),
+        price: z.number(),
+      })
+    )
+    .min(1, "At least one delivery slab is required"),
 });
 
 export const createCategorySchema = z.object({
@@ -83,7 +87,6 @@ export const addItemSchema = z.object({
   isAvailable: z.boolean().default(true),
 });
 
-export const  updateAddressSchema = addressSchema.partial();
 // --- TypeScript Type Exports ---
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
