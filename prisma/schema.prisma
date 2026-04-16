@@ -36,6 +36,8 @@ model Restaurant {
   ownerId     String     
   
   address     Address?   // 1-to-1 relationship with the Address model
+  isVerified  Boolean  @default(false) // <--- New Field
+  status      ApprovalStatus @default(PENDING)
   categories  Category[]
   menuItems   MenuItem[]
   orders      Order[]
@@ -44,6 +46,13 @@ model Restaurant {
   updatedAt   DateTime   @updatedAt
 
   @@index([ownerId])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 // --- UNIFIED ADDRESS MODEL ---

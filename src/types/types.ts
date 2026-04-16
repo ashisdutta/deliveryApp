@@ -46,7 +46,43 @@ export const addressSchema = z.object({
   label: z.string().optional(), // e.g., "Home", "Office"
 });
 
-export const updateAddressSchema = addressSchema.partial();
+export const createRestaurantSchema = z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zipCode: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+    deliverySlabs: z.array(
+        z.object({
+            minDistance: z.number(),
+            maxDistance: z.number(),
+            price: z.number(),
+        })
+    ).min(1, "At least one delivery slab is required"),
+});
+
+export const createCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, "Category name is required")
+    .max(50, "Category name is too long")
+    .trim(),
+  restaurantId: z.uuid("Invalid Restaurant ID"),
+});
+
+export const addItemSchema = z.object({
+  name: z.string().min(1, "Item name is required").trim(),
+  description: z.string().optional(),
+  price: z.number().positive("Price must be a positive number"),
+  imageUrl: z.url("Invalid image URL").optional().or(z.literal("")),
+  categoryId: z.uuid("Invalid Category ID"),
+  restaurantId: z.uuid("Invalid Restaurant ID"),
+  isAvailable: z.boolean().default(true),
+});
+
 
 // --- TypeScript Type Exports ---
 

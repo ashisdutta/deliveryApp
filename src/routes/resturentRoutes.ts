@@ -6,15 +6,15 @@ import {
     itemList,
     deleteItem,
     deleteCatagory
-} from "../controllers/resturentController.js";
+} from "../controllers/restaurantController.js";
 
-import { protect } from "../middleware/auth.middleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
 router.post("/add-restaurant", protect, addRestaurant);
 router.post("/add-catagories", protect, addCatagories)
 router.post("/add-item", protect, addItem);
-router.get("/items", protect, itemList);
-router.delete("/delete-item", protect, deleteItem);
-router.delete("/delete-catagory", protect, deleteCatagory);
+router.delete("/delete-item/:id", protect, deleteItem);
+router.delete("/delete-catagory/:id", protect, deleteCatagory);
+router.get("/:id/items", protect, itemList);
