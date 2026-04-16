@@ -1,131 +1,97 @@
-import { prisma } from "../lib/prisma.js";
 import { type Request, type Response } from "express";
-import { registerSchema, loginSchema } from "../types/types.js";
+import { prisma } from "../lib/prisma.js";
+import { sendOtpSchema, verifyOtpSchema } from "../types/types.js";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import "dotenv/config";
+import { z } from "zod";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET!;
 
-// --- Register ---
-export const register = async (req: Request, res: Response) => {
-  const result = registerSchema.safeParse(req.body);
-
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid inputs",
-      errors: result.error.issues,
-    });
+// ---  Send OTP ---
+export const sendOtp = async (req: Request, res: Response) => {
+  const validation = sendOtpSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: "Invalid phone number" });
   }
 
-  // NOTE: For React Native, pass the verificationToken in the body, not cookies.
-  const { name, password, phone, role, verificationToken } = result.data;
+  const { phone } = validation.data;
 
   try {
-    if (!verificationToken) {
-      return res
-        .status(401)
-        .json({ message: "Verification token is required" });
-    }
+    // TODO: Integrate your actual SMS provider here (Twilio, AWS SNS, Fast2SMS)
+    // Example: await twilioClient.verify.v2.services(serviceSid).verifications.create({ to: phone, channel: 'sms' });
 
-    let decodedEmail: string;
+    // For development, we will mock the OTP sending
+    console.log(`[MOCK SMS] OTP sent to ${phone}: 123456`);
 
-    try {
-      const decoded = jwt.verify(
-        verificationToken,
-        process.env.JWT_SECRET!
-      ) as any;
-
-      if (!decoded.isVerified || !decoded.email) {
-        throw new Error("Invalid token payload");
-      }
-
-      decodedEmail = decoded.email;
-    } catch (err) {
-      return res
-        .status(401)
-        .json({ message: "Invalid or expired verification token" });
-    }
-
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        email: decodedEmail,
-      },
+    return res.status(200).json({
+      message: "OTP sent successfully",
+      phone: phone,
     });
-
-    if (existingUser) {
-      return res.status(409).json({ message: "Email already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        password: hashedPassword,
-        email: decodedEmail,
-        phone: phone || null,
-        ...(role && { role }),
-      },
-    });
-
-    // Create auth token
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
-
-    // Send token directly in the JSON response for React Native to store via SecureStore
-    return res.status(201).json({
-      message: "User created",
-      user: { id: user.id, role: user.role },
-      token: token,
-    });
-  } catch (err: any) {
-    console.error("Register Error:", err);
-    return res.status(500).json({ message: "Internal Server Error" });
+  } catch (error) {
+    console.error("Send OTP Error:", error);
+    return res.status(500).json({ message: "Failed to send OTP" });
   }
 };
 
-// --- Login ---
-export const login = async (req: Request, res: Response) => {
-  try {
-    const validation = loginSchema.safeParse(req.body);
+// ---  Verify OTP & Authenticate ---
+export const verifyOtp = async (req: Request, res: Response) => {
+  const validation = verifyOtpSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ message: "Invalid inputs" });
+  }
 
-    if (!validation.success) {
-      return res.status(400).json({
-        message: "Invalid inputs",
-        errors: validation.error.format(),
-      });
+  const { phone, otp } = validation.data;
+
+  try {
+    // TODO: Verify the OTP with your SMS provider
+    // Example: const verification = await twilioClient.verify.v2.services(serviceSid).verificationChecks.create({ to: phone, code: otp });
+    // if (verification.status !== 'approved') throw new Error("Invalid OTP");
+
+    // For development, we mock a successful check if the OTP is 123456
+    if (otp !== "123456") {
+      return res.status(401).json({ message: "Invalid or expired OTP" });
     }
 
-    const { email, password } = validation.data;
-
-    const user = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
+    // 1. Check if the user already exists
+    let user = await prisma.user.findUnique({
+      where: { phone: phone },
     });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    let isNewUser = false;
+
+    // 2. If user doesn't exist, Auto-Register them
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          phone: phone,
+          role: "CUSTOMER",
+        },
+      });
+      isNewUser = true;
     }
 
+    // 3. Generate the final JWT token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
+      JWT_SECRET,
+      { expiresIn: "30d" } // Mobile sessions usually last longer
     );
 
-    // Send token directly in the JSON response
-    return res.json({
-      message: "Login successful",
-      user: { id: user.id, name: user.name, role: user.role },
+    // 4. Send token and user data to React Native
+    return res.status(200).json({
+      message: isNewUser
+        ? "Account created successfully"
+        : "Logged in successfully",
+      isNewUser: isNewUser, // Tells React Native what screen to show next
+      user: {
+        id: user.id,
+        phone: user.phone,
+        name: user.name,
+        role: user.role,
+      },
       token: token,
     });
   } catch (error) {
-    console.error("Login Error:", error);
+    console.error("Verify OTP Error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -135,55 +101,4 @@ export const logout = (req: Request, res: Response) => {
   // In a pure JWT mobile setup, logout is handled client-side by deleting the token from SecureStore.
   // The backend just sends a success response.
   res.json({ message: "Logged out successfully" });
-};
-
-// --- Me (Verify Session) ---
-export const getMe = async (req: Request, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ message: "Not authenticated" });
-    return;
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: req.user?.userId },
-    select: { id: true, name: true, email: true, phone: true, role: true },
-  });
-
-  if (!user) {
-    res.status(404).json({ message: "User not found" });
-    return;
-  }
-
-  res.json(user);
-};
-
-// --- Update User ---
-export const updateUser = async (req: Request, res: Response) => {
-  const { userId } = req.user!;
-  const { name, phone } = req.body;
-
-  try {
-    const updated = await prisma.user.update({
-      where: {
-        id: userId as string,
-      },
-      data: {
-        name,
-        phone,
-      },
-      select: { id: true, name: true, phone: true },
-    });
-
-    if (updated) {
-      return res.status(200).json({
-        msg: "Update successful",
-        user: updated,
-      });
-    }
-  } catch (error) {
-    console.error("Update Error:", error);
-    return res.status(500).json({
-      message: "Failed to update user",
-    });
-  }
 };

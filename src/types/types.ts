@@ -5,17 +5,13 @@ const RoleEnum = z.enum(["CUSTOMER", "RESTAURANT_OWNER", "SUPER_ADMIN"]);
 
 // --- Schemas ---
 
-export const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters long"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
-  phone: z.string().optional(),
-  role: RoleEnum.optional(),
-  verificationToken: z.string().min(1, "Verification token is required"),
+export const sendOtpSchema = z.object({
+  phone: z.string().min(10, "Valid phone number is required"),
 });
 
-export const loginSchema = z.object({
-  email: z.email("Please provide a valid email address"),
-  password: z.string().min(1, "Password is required"),
+export const verifyOtpSchema = z.object({
+  phone: z.string().min(10, "Valid phone number is required"),
+  otp: z.string().length(6, "OTP must be exactly 6 digits"),
 });
 
 export const updateUserSchema = z.object({
@@ -24,19 +20,31 @@ export const updateUserSchema = z.object({
 });
 
 export const orderSchema = z.object({
-  restaurantId: z.uuid({message:"Invalid Restaurant selection"}),
+  restaurantId: z.uuid({ message: "Invalid Restaurant selection" }),
   addressId: z.uuid(),
-  items: z.array(
-    z.object({
-      menuItemId: z.uuid("Invalid Menu Item"),
-      quantity: z
+  items: z
+    .array(
+      z.object({
+        menuItemId: z.uuid("Invalid Menu Item"),
+        quantity: z
           .number()
           .int("Quantity must be a whole number")
           .positive("Quantity must be at least 1"),
-    })
-  )
-  .min(1, "Your cart cannot be empty"),
-})
+      })
+    )
+    .min(1, "Your cart cannot be empty"),
+});
+
+export const addressSchema = z.object({
+  street: z.string().min(1, "Street is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zipCode: z.string().min(1, "Zip code is required"),
+  country: z.string().default("India"),
+  latitude: z.number().nullish(),
+  longitude: z.number().nullish(),
+  label: z.string().optional(), // e.g., "Home", "Office"
+});
 
 export const createRestaurantSchema = z.object({
     name: z.string(),
@@ -78,6 +86,6 @@ export const addItemSchema = z.object({
 
 // --- TypeScript Type Exports ---
 
-export type RegisterInput = z.infer<typeof registerSchema>;
-export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type AddressInput = z.infer<typeof addressSchema>;
+export type UpdateAddressInput = z.infer<typeof updateAddressSchema>;

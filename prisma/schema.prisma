@@ -9,10 +9,8 @@ datasource db {
 
 model User {
   id        String    @id @default(uuid())
-  email     String    @unique
-  password  String    // Ensure this is hashed before saving
-  name      String
-  phone     String?
+  name      String?
+  phone     String    @unique
   role      Role      @default(CUSTOMER)
   addresses Address[] // A user can have multiple saved addresses
   orders    Order[]   // A user's order history
