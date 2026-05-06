@@ -1,80 +1,18 @@
 import { type Request, type Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import {
-  createRestaurantSchema,
-  createCategorySchema,
-  addItemSchema,
-} from "../types/types.js";
-import { ItemCategory } from "@prisma/client";
+import { createRestaurantSchema, addItemSchema } from "../types/types.js";
+import { ItemCategory } from '@prisma/client';
 
-export const addRestaurant = async (req: Request, res: Response) => {
-  const userId = req.user?.userId;
 
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+export const addRestaurant = async (req:Request, res:Response) => {
+    const userId = req.user?.userId;
 
-  if (
-    req.user?.role !== "RESTAURANT_OWNER" &&
-    req.user?.role !== "SUPER_ADMIN"
-  ) {
-    return res
-      .status(403)
-      .json({ message: "Only owners can create restaurants" });
-  }
+    if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
 
-  const result = createRestaurantSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid inputs",
-      errors: result.error.issues,
-    });
-  }
-
-  const {
-    name,
-    description,
-    street,
-    city,
-    state,
-    zipCode,
-    latitude,
-    longitude,
-  } = result.data;
-
-  // const existingRestaurant = await prisma.restaurant.findFirst({
-  //     where: { ownerId: userId }
-  // });
-  // if (existingRestaurant) {
-  //     return res.status(400).json({ message: "You already have a restaurant" });
-  // }
-
-  try {
-    const newRestaurant = await prisma.restaurant.create({
-      data: {
-        name,
-        description: description ?? null,
-        ownerId: userId,
-        address: {
-          create: {
-            street,
-            city,
-            state,
-            zipCode,
-            latitude,
-            longitude,
-          },
-        },
-      },
-      include: {
-        address: true,
-      },
-    });
-
-    return res.status(201).json({ message: " successfully", newRestaurant });
-  } catch (error) {
-    if (error instanceof Error) {
-      return res.status(400).json({ message: error.message });
+    if (req.user?.role !== 'RESTAURANT_OWNER' && req.user?.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ message: "Only owners can create restaurants" });
     }
     return res.status(500).json({ message: "Failed to create restaurant" });
   }
@@ -216,11 +154,82 @@ export const itemList = async (req: Request, res: Response) => {
         filter.category = categoryQuery as ItemCategory;
       } else {
         return res.status(400).json({
-          message: `Invalid category. Allowed values: ${Object.values(
-            ItemCategory
-          ).join(", ")}`,
+            message: "Invalid inputs",
+            errors: result.error.issues
+        })
+    }
+    const { 
+            name, 
+            description, 
+            price, 
+            imageUrl, 
+            category, 
+            restaurantId, 
+            isAvailable 
+        } = result.data;
+    
+    try {
+        const restaurant = await prisma.restaurant.findFirst({
+            where: {
+                id: restaurantId,
+                ownerId: userId,
+            },
         });
-      }
+
+        if (!restaurant) {
+            return res.status(403).json({ message: "You do not own this restaurant" });
+        }
+
+        const newItem = await prisma.menuItem.create({
+            data: {
+                name, 
+                description: description ?? null, 
+                price, 
+                imageUrl: imageUrl ?? null, 
+                category, 
+                restaurantId, 
+                isAvailable
+            }
+        });
+
+        return res.status(201).json(
+            {message: " successfully created Item",
+            newItem});
+    } catch (error) {
+        if (error instanceof Error) {
+            return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: "Failed to create Item" });
+    }
+}
+
+export const deleteItem = async (req:Request, res:Response) => {
+    const userId = req.user?.userId;
+    const itemId = req.params.id;
+    if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (req.user?.role !== 'RESTAURANT_OWNER' && req.user?.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ message: "Only owners can create restaurants" });
+    }
+
+    try {
+        const deleteOperation = await prisma.menuItem.deleteMany({
+            where: {
+                id: itemId as string, 
+                restaurant: {
+                    ownerId: userId
+                }
+            }
+        });
+        return res.status(200).json(
+            {message: " Item deleted successfully",
+                deleteOperation
+            }
+        );
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to delete Item" });
     }
 
     // 5. Execute the query

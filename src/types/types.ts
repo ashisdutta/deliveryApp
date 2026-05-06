@@ -2,6 +2,7 @@ import { z } from "zod";
 
 // --- Enums ---
 const RoleEnum = z.enum(["CUSTOMER", "RESTAURANT_OWNER", "SUPER_ADMIN"]);
+import { ItemCategory } from "@prisma/client";
 
 // --- Schemas ---
 
@@ -56,16 +57,7 @@ export const createRestaurantSchema = z.object({
   state: z.string(),
   zipCode: z.string(),
   latitude: z.number(),
-  longitude: z.number(),
-  deliverySlabs: z
-    .array(
-      z.object({
-        minDistance: z.number(),
-        maxDistance: z.number(),
-        price: z.number(),
-      })
-    )
-    .min(1, "At least one delivery slab is required"),
+  longitude: z.number()
 });
 
 export const createCategorySchema = z.object({
@@ -82,7 +74,7 @@ export const addItemSchema = z.object({
   description: z.string().optional(),
   price: z.number().positive("Price must be a positive number"),
   imageUrl: z.url("Invalid image URL").optional().or(z.literal("")),
-  categoryId: z.uuid("Invalid Category ID"),
+  category: z.enum(ItemCategory),
   restaurantId: z.uuid("Invalid Restaurant ID"),
   isAvailable: z.boolean().default(true),
 });
