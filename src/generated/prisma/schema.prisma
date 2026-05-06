@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String?
+  phone     String    @unique
+  role      Role      @default(CUSTOMER)
+  addresses Address[] // A user can have multiple saved addresses
+  orders    Order[] // A user's order history
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum Role {
+  CUSTOMER
+  RESTAURANT_OWNER
+  SUPER_ADMIN
+}
+
+// --- TENANTS (HOTELS/RESTAURANTS) ---
+
+model Restaurant {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  isOpen      Boolean @default(true)
+
+  // The User who manages this restaurant (Role should be RESTAURANT_OWNER)
+  ownerId String
+
+  address       Address? // 1-to-1 relationship with the Address model
+  isVerified    Boolean        @default(false) // <--- New Field
+  status        ApprovalStatus @default(PENDING)
+  categories    Category[]
+  menuItems     MenuItem[]
+  orders        Order[]
+  deliverySlabs DeliverySlab[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([ownerId])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+// --- UNIFIED ADDRESS MODEL ---
+
+model Address {
+  id           String      @id @default(uuid())
+  street       String
+  city         String
+  state        String
+  zipCode      String
+  country      String      @default("India")
+  latitude     Float? // Useful for delivery distance tracking
+  longitude    Float?
+  label        String? // e.g., "Home", "Office" (Mainly for Users)
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurantId String?     @unique
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+// --- MENU MANAGEMENT ---
+
+model Category {
+  id           String     @id @default(uuid())
+  name         String
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItems    MenuItem[]
+
+  @@unique([name, restaurantId])
+}
+
+model MenuItem {
+  id           String      @id @default(uuid())
+  name         String
+  description  String?
+  price        Float
+  isAvailable  Boolean     @default(true)
+  imageUrl     String?
+  categoryId   String
+  isDeleted    Boolean     @default(false)
+  category     Category    @relation(fields: [categoryId], references: [id])
+  restaurantId String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+
+  @@index([restaurantId])
+}
+
+// --- ORDER PROCESSING ---
+
+model Order {
+  id             String      @id @default(uuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  restaurantId   String
+  restaurant     Restaurant  @relation(fields: [restaurantId], references: [id])
+  status         OrderStatus @default(PENDING)
+  subTotal       Float // Food price only
+  discountAmount Float       @default(0.0)
+  taxAmount      Float // GST amount
+  deliveryFee    Float
+  totalAmount    Float
+  items          OrderItem[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([restaurantId])
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  priceAtBuy Float // Records the item's price at the exact moment of purchase
+
+  @@index([orderId])
+}
+
+model DeliverySlab {
+  id           String     @id @default(uuid())
+  minDistance  Float // in km (e.g., 0)
+  maxDistance  Float // in km (e.g., 2)
+  price        Float // (e.g., 20)
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}

@@ -4,23 +4,6 @@ import { addressSchema, updateAddressSchema } from "../types/types.js";
 
 import "dotenv/config";
 
-// --- Get All Addresses for Logged-In User ---
-export const getMyAddresses = async (req: Request, res: Response) => {
-  const { userId } = req.user!;
-
-  try {
-    const addresses = await prisma.address.findMany({
-      where: { userId: userId },
-      orderBy: { createdAt: "desc" }, // Shows the newest addresses first
-    });
-
-    return res.status(200).json(addresses);
-  } catch (error) {
-    console.error("Get Addresses Error:", error);
-    return res.status(500).json({ message: "Failed to fetch addresses" });
-  }
-};
-
 // --- Add a New Address ---
 export const addAddress = async (req: Request, res: Response) => {
   const { userId } = req.user!;
@@ -124,26 +107,6 @@ export const deleteAddress = async (req: Request, res: Response) => {
   }
 };
 
-// --- Me (Verify Session) ---
-export const getMe = async (req: Request, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ message: "Not authenticated" });
-    return;
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: req.user?.userId },
-    select: { id: true, name: true, phone: true, role: true },
-  });
-
-  if (!user) {
-    res.status(404).json({ message: "User not found" });
-    return;
-  }
-
-  res.json(user);
-};
-
 // --- Update User ---
 export const updateUser = async (req: Request, res: Response) => {
   const { userId } = req.user!;
@@ -172,5 +135,44 @@ export const updateUser = async (req: Request, res: Response) => {
     return res.status(500).json({
       message: "Failed to update user",
     });
+  }
+};
+
+// @desc    Get current user profile
+// @route   GET /api/users/me
+export const getUserProfile = async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ message: "Not authenticated" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user?.userId },
+    select: { id: true, name: true, phone: true, role: true },
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  res.json(user);
+};
+
+// @desc    Get logged in user's addresses
+// @route   GET /api/users/addresses
+export const getMyAddresses = async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+
+  try {
+    const addresses = await prisma.address.findMany({
+      where: { userId: userId },
+      orderBy: { createdAt: "desc" }, // Shows the newest addresses first
+    });
+
+    return res.status(200).json(addresses);
+  } catch (error) {
+    console.error("Get Addresses Error:", error);
+    return res.status(500).json({ message: "Failed to fetch addresses" });
   }
 };
