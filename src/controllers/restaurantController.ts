@@ -1,6 +1,6 @@
 import {type Request, type Response} from "express";
 import { prisma } from "../lib/prisma.js";
-import { createRestaurantSchema, createCategorySchema, addItemSchema } from "../types/types.js";
+import { createRestaurantSchema, addItemSchema } from "../types/types.js";
 import { ItemCategory } from '@prisma/client';
 
 
@@ -94,7 +94,7 @@ export const addItem = async (req:Request, res:Response) => {
             description, 
             price, 
             imageUrl, 
-            categoryId, 
+            category, 
             restaurantId, 
             isAvailable 
         } = result.data;
@@ -117,7 +117,7 @@ export const addItem = async (req:Request, res:Response) => {
                 description: description ?? null, 
                 price, 
                 imageUrl: imageUrl ?? null, 
-                categoryId, 
+                category, 
                 restaurantId, 
                 isAvailable
             }
