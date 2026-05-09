@@ -167,3 +167,92 @@ export const cancelOrder = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// @desc    Get all orders for a specific restaurant (Owner Dashboard)
+// @route   GET /api/orders/restaurant/:restaurantId
+export const getRestaurantOrders = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const restaurantId = req.params.restaurantId as string;
+
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    // 1. Verify ownership
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant || restaurant.ownerId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You do not own this restaurant" });
+    }
+
+    // 2. Fetch orders (Include user details so the restaurant knows who ordered)
+    const orders = await prisma.order.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: {
+          include: { menuItem: { select: { name: true } } },
+        },
+        user: {
+          select: { name: true, phone: true },
+        },
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ success: true, count: orders.length, orders });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch restaurant orders" });
+  }
+};
+
+// @desc    Update the status of an order (Owner Action)
+// @route   PATCH /api/orders/:id/status
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const orderId = req.params.id as string;
+  const { status } = req.body; // e.g., "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"
+
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    // 1. Ensure the order belongs to a restaurant this user owns
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { restaurant: true },
+    });
+
+    if (!order || order.restaurant.ownerId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Order not found or unauthorized" });
+    }
+
+    // 2. Validate the status against the Prisma Enum
+    const validStatuses = Object.values(OrderStatus);
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    // 3. Update the order
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+    });
+
+    return res.status(200).json({
+      message: `Order status updated to ${status}`,
+      order: updatedOrder,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to update order status" });
+  }
+};
