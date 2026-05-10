@@ -33,18 +33,17 @@ export const getRestaurantById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    console.log("Fetching restaurant with ID:", id);
+
     const restaurant = await prisma.restaurant.findUnique({
-      where: { id: id as string },
+      where: { id: String(id) },
       include: {
         address: true,
-        categories: {
-          include: {
-            menuItems: {
-              where: {
-                isDeleted: false,
-                isAvailable: true, // Only show available items to customers
-              },
-            },
+        // FIX: We are querying 'menuItems' directly instead of going through 'categories'
+        menuItems: {
+          where: {
+            isDeleted: false,
+            isAvailable: true, // Only show available items to customers
           },
         },
       },
@@ -58,9 +57,12 @@ export const getRestaurantById = async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: restaurant });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server Error", error: error.message });
+    console.error("PRISMA ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
@@ -132,12 +134,10 @@ export const getPopularItems = async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: popularItems });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch popular items",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular items",
+      error: error.message,
+    });
   }
 };

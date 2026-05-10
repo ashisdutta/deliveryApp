@@ -215,7 +215,7 @@ export const itemList = async (req: Request, res: Response) => {
 // @route   PATCH /api/restaurants/:id/toggle-status
 export const toggleRestaurantStatus = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
-  const restaurantId = req.params.restaurantId as string;
+  const restaurantId = req.params.id as string;
 
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -253,7 +253,8 @@ export const toggleRestaurantStatus = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const itemId = req.params.id as string;
-  const { price, isAvailable, name, description, imageUrl } = req.body;
+  const { price, isAvailable, name, description, imageUrl, category } =
+    req.body;
 
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -279,6 +280,7 @@ export const updateItem = async (req: Request, res: Response) => {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
         ...(imageUrl !== undefined && { imageUrl }),
+        ...(category !== undefined && { category }),
       },
     });
 
@@ -288,5 +290,26 @@ export const updateItem = async (req: Request, res: Response) => {
     });
   } catch (error) {
     return res.status(500).json({ message: "Failed to update item" });
+  }
+};
+
+// @desc    Get all restaurants owned by the current user
+// @route   GET /api/restaurant/my-restaurants
+export const getMyRestaurants = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const restaurants = await prisma.restaurant.findMany({
+      where: { ownerId: userId },
+      include: { address: true },
+    });
+
+    res.status(200).json({ success: true, data: restaurants });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch your restaurants" });
   }
 };
