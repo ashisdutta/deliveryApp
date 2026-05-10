@@ -7,6 +7,7 @@ import {
   toggleRestaurantStatus,
   updateItem,
 } from "../controllers/restaurantController.js";
+import { getMyRestaurants } from "../controllers/restaurantController.js";
 
 import { protect, restrictTo } from "../middlewares/authMiddleware.js";
 
@@ -46,5 +47,12 @@ router.patch(
 );
 
 router.get("/:id/items", protect, itemList);
+
+router.get(
+  "/my-restaurants",
+  protect,
+  restrictTo("RESTAURANT_OWNER"),
+  getMyRestaurants
+);
 
 export default router;
