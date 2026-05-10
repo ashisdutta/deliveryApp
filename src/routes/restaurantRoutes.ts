@@ -7,7 +7,6 @@ import {
   deleteItem,
   //deleteCatagory,
 } from "../controllers/restaurantController.js";
-import { getMyRestaurants } from "../controllers/restaurantController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
 
@@ -18,12 +17,5 @@ router.post("/add-item", protect, addItem);
 router.delete("/delete-item/:id", protect, deleteItem);
 
 router.get("/:id/items", protect, itemList);
-
-router.get(
-  "/my-restaurants",
-  protect,
-  restrictTo("RESTAURANT_OWNER"),
-  getMyRestaurants
-);
 
 export default router;
