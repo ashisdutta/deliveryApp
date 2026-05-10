@@ -1,12 +1,9 @@
 import { Router } from "express";
-import { restrictTo } from "../middlewares/authMiddleware.js";
 import {
   placeOrder,
   orderHistory,
   getOrderDetails,
   cancelOrder,
-  getRestaurantOrders,
-  updateOrderStatus,
 } from "../controllers/orderController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";

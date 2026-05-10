@@ -1,50 +1,21 @@
 import { Router } from "express";
 import {
   addRestaurant,
+  //addCatagories,
   addItem,
   itemList,
   deleteItem,
-  toggleRestaurantStatus,
-  updateItem,
+  //deleteCatagory,
 } from "../controllers/restaurantController.js";
 import { getMyRestaurants } from "../controllers/restaurantController.js";
 
-import { protect, restrictTo } from "../middlewares/authMiddleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.post(
-  "/add-restaurant",
-  protect,
-  restrictTo("RESTAURANT_OWNER", "SUPER_ADMIN"),
-  addRestaurant
-);
-router.post(
-  "/add-item",
-  protect,
-  restrictTo("RESTAURANT_OWNER", "SUPER_ADMIN"),
-  addItem
-);
-router.delete(
-  "/delete-item/:id",
-  protect,
-  restrictTo("RESTAURANT_OWNER", "SUPER_ADMIN"),
-  deleteItem
-);
-
-router.patch(
-  "/:id/toggle-status",
-  protect,
-  restrictTo("RESTAURANT_OWNER", "SUPER_ADMIN"),
-  toggleRestaurantStatus
-);
-
-router.patch(
-  "/item/:id",
-  protect,
-  restrictTo("RESTAURANT_OWNER", "SUPER_ADMIN"),
-  updateItem
-);
+router.post("/add-restaurant", protect, addRestaurant);
+router.post("/add-item", protect, addItem);
+router.delete("/delete-item/:id", protect, deleteItem);
 
 router.get("/:id/items", protect, itemList);
 
