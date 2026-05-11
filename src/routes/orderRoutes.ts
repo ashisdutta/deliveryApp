@@ -7,6 +7,7 @@ import {
   cancelOrder,
   getRestaurantOrders,
   updateOrderStatus,
+  getDashboardStats,
 } from "../controllers/orderController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
@@ -23,7 +24,13 @@ router.get(
   getRestaurantOrders
 );
 
-router.get("/:id", protect, getOrderDetails);
+router.get(
+  "/restaurant/:restaurantId/dashboard",
+  protect,
+  restrictTo("RESTAURANT_OWNER", "SUPER_ADMIN"),
+  getDashboardStats
+);
+
 router.patch("/:id/cancel", protect, cancelOrder);
 
 router.patch(
@@ -33,4 +40,5 @@ router.patch(
   updateOrderStatus
 );
 
+router.get("/:id", protect, getOrderDetails);
 export default router;
