@@ -70,6 +70,7 @@ model Address {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   @@index([userId])
+  orders    Order[]
 }
 
 // --- MENU MANAGEMENT ---
@@ -97,6 +98,8 @@ model Order {
   user             User        @relation(fields: [userId], references: [id])
   restaurantId     String
   restaurant       Restaurant  @relation(fields: [restaurantId], references: [id])
+  addressId        String
+  address          Address     @relation(fields: [addressId], references: [id])
   status           OrderStatus @default(PENDING)
   subTotal         Float       // Food price only
   discountAmount   Float       @default(0.0)
@@ -106,6 +109,7 @@ model Order {
   items            OrderItem[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+  
   @@index([userId])
   @@index([restaurantId])
 }

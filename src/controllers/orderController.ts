@@ -35,6 +35,7 @@ export const placeOrder = async (req: Request, res: Response) => {
         subTotal,
         discountAmount,
         taxAmount,
+        addressId,
         deliveryFee,
         totalAmount,
         items: {
