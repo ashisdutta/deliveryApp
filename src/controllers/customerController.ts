@@ -32,9 +32,6 @@ export const getAllRestaurants = async (req: Request, res: Response) => {
 export const getRestaurantById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    console.log("Fetching restaurant with ID:", id);
-
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: String(id) },
       include: {

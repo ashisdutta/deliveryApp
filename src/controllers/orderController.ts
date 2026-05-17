@@ -200,6 +200,7 @@ export const getRestaurantOrders = async (req: Request, res: Response) => {
         user: {
           select: { name: true, phone: true },
         },
+        address: true,
       },
     });
 
@@ -210,6 +211,60 @@ export const getRestaurantOrders = async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ message: "Failed to fetch restaurant orders" });
+  }
+};
+
+// @desc    Get Today's Orders and Revenue for Dashboard
+// @route   GET /api/order/restaurant/:restaurantId/dashboard
+export const getDashboardStats = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const restaurantId = req.params.restaurantId as string;
+
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+    if (!restaurant || restaurant.ownerId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You do not own this restaurant" });
+    }
+
+    // Get the start of today (Midnight)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // Fetch only orders created today
+    const todaysOrders = await prisma.order.findMany({
+      where: {
+        restaurantId,
+        createdAt: { gte: startOfToday },
+      },
+      include: {
+        user: { select: { name: true } },
+        items: { include: { menuItem: { select: { name: true } } } },
+        address: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Calculate revenue (excluding cancelled orders)
+    const validOrders = todaysOrders.filter((o) => o.status !== "CANCELLED");
+    const todayRevenue = validOrders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
+
+    return res.status(200).json({
+      success: true,
+      todayOrderCount: todaysOrders.length,
+      todayRevenue: todayRevenue,
+      todaysOrders: todaysOrders,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch dashboard stats" });
   }
 };
 
