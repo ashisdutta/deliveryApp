@@ -30,7 +30,12 @@ model Restaurant {
   name        String
   description String?
   isOpen      Boolean    @default(true)
-  
+
+  imageUrl    String?         // Holds your optimized ImageKit URL link
+  rating      Float          @default(4.0) // Overall average rating (e.g., 4.7)
+  eta         String         @default("25-35 min") // Your default time layout text
+  offer       String?        // e.g., "50% OFF up to ₹100" or null
+  badge       String         @default("Brunch fave")
   // The User who manages this restaurant (Role should be RESTAURANT_OWNER)
   ownerId     String     
   

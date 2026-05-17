@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import { string } from "zod";
+import { string, success } from "zod";
+import { ItemCategory } from "@prisma/client";
+import { catchall } from "zod/mini";
 
 // @desc    Get all open and approved restaurants
 // @route   GET /api/customer/restaurants
@@ -17,7 +19,7 @@ export const getAllRestaurants = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json({ success: true, data: restaurants });
+    res.status(200).json({ success: true, restaurants: restaurants });
   } catch (error: any) {
     res.status(500).json({
       success: false,
@@ -134,6 +136,95 @@ export const getPopularItems = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch popular items",
+      error: error.message,
+    });
+  }
+};
+
+export const getCategoryItems = async (req: Request, res: Response) => {
+  const { category } = req.query;
+
+  try {
+    const allCategories = Object.values(ItemCategory);
+    let items;
+
+    // 1. If a category query is provided, validate and filter by it
+    if (category) {
+      const isValid = allCategories.includes(category as ItemCategory);
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid category. Please use one of: ${allCategories.join(", ")}`,
+        });
+      }
+
+      items = await prisma.$queryRaw`
+        SELECT * FROM "MenuItem"
+        WHERE "category" = ${category}::"ItemCategory"
+        AND "isDeleted" = false
+        ORDER BY RANDOM()
+        LIMIT 20
+      `;
+    } else {
+      // 2. If NO category is provided ("All" tab), pull random items globally!
+      items = await prisma.$queryRaw`
+        SELECT * FROM "MenuItem"
+        WHERE "isDeleted" = false
+        ORDER BY RANDOM()
+        LIMIT 15
+      `;
+    }
+
+    return res.status(200).json({
+      success: true,
+      items
+    });
+  } catch (error) {
+    console.error("Discovery Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// @desc    Get all menu items for a specific restaurant
+// @route   GET /api/customer/restaurants/:restaurantId/items
+export const getRestaurantMenu = async (req: Request, res: Response) => {
+  const { restaurantId } = req.params;
+
+  try {
+    // 1. First verify if the restaurant exists and is active
+    const restaurantExists = await prisma.restaurant.findUnique({
+      where: { id: restaurantId as string},
+      select: { id: true, isOpen: true }
+    });
+
+    if (!restaurantExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    // 2. Fetch all menu items linked to this restaurantId
+    const items = await prisma.menuItem.findMany({
+      where: {
+        restaurantId: restaurantId as string,
+        isDeleted: false, // Don't show deleted dishes
+      },
+      orderBy: {
+        name: "asc", // Alphabetical menu sorting
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: items.length,
+      items,
+    });
+  } catch (error: any) {
+    console.error("Fetch Restaurant Menu Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching menu",
       error: error.message,
     });
   }
