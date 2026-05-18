@@ -27,6 +27,7 @@ export const addRestaurant = async (req: Request, res: Response) => {
     zipCode,
     latitude,
     longitude,
+    imageUrl,
   } = result.data;
 
   try {
@@ -34,6 +35,7 @@ export const addRestaurant = async (req: Request, res: Response) => {
       data: {
         name,
         description: description ?? null,
+        imageUrl: imageUrl ?? null,
         ownerId: userId,
         address: {
           create: {
