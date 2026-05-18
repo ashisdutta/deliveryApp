@@ -57,7 +57,8 @@ export const createRestaurantSchema = z.object({
   state: z.string(),
   zipCode: z.string(),
   latitude: z.number(),
-  longitude: z.number()
+  longitude: z.number(),
+  imageUrl: z.url("Invalid image URL").optional().or(z.literal("")),
 });
 
 export const createCategorySchema = z.object({
