@@ -73,8 +73,8 @@ model Address {
   user         User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
   restaurantId String?     @unique 
   restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
- isDeleted    Boolean     @default(false)
- createdAt    DateTime    @default(now())
+  isDeleted    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   @@index([userId])
   orders    Order[]
